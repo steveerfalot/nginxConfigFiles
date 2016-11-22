@@ -1,0 +1,65 @@
+upstream jenkins {
+    server 127.0.0.1:8081 fail_timeout=0;
+}
+
+server {
+        listen 80;
+        server_name mikeparksdev.com/serversyourway;
+
+        location / {
+                root /var/www/serversyourway/app;
+                add_header Cache-Control no-cache;
+                index index.html$args;
+                try_files $uri$args $uri$args/ $uri/ /index.html$args =404;
+        }
+
+        location /api {
+                root /opt/tomcat/webapps/ServerSalesWeb/;
+
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_pass http://104.131.0.229:8080/ServerSalesWeb/;
+        }
+
+        location /debttracker {
+                root /var/www/debttracker/app;
+                add_header Cache-Control no-cache;
+                index index.html$args;
+                try_files $uri$args $uri$args/ $uri/ /index.html$args =404;
+        }
+
+        location /debttracker/api {
+                root /opt/tomcat/webapps/DebtTrackerWeb/;
+
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_pass http://104.131.0.229:8080/DebtTrackerWeb/;
+        }
+
+        error_page 404 /404.html;
+        error_page 500 502 503 504 /50x.html;
+
+        location = /50x.html {
+                root /usr/share/nginx/html;
+        }
+
+}
+
+
+server {
+    listen 80;
+    server_name jenkins.mikeparksdev.com;
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+
+        if (!-f $request_filename) {
+            proxy_pass http://jenkins;
+            break;
+        }
+    }
+}
